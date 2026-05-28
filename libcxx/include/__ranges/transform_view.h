@@ -30,6 +30,7 @@
 #include <__ranges/empty.h>
 #include <__ranges/movable_box.h>
 #include <__ranges/range_adaptor.h>
+#include <__ranges/reserve_hint.h>
 #include <__ranges/size.h>
 #include <__ranges/view_interface.h>
 #include <__type_traits/conditional.h>
@@ -38,6 +39,7 @@
 #include <__type_traits/is_nothrow_constructible.h>
 #include <__type_traits/is_object.h>
 #include <__type_traits/is_reference.h>
+#include <__type_traits/make_unsigned.h>
 #include <__type_traits/maybe_const.h>
 #include <__type_traits/remove_cvref.h>
 #include <__utility/forward.h>
@@ -129,6 +131,22 @@ public:
   {
     return ranges::size(__base_);
   }
+
+#  if _LIBCPP_STD_VER >= 26
+
+  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto reserve_hint()
+    requires approximately_sized_range<_View>
+  {
+    return ranges::reserve_hint(__base_);
+  }
+
+  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto reserve_hint() const
+    requires approximately_sized_range<const _View>
+  {
+    return ranges::reserve_hint(__base_);
+  }
+
+#  endif //_LIBCPP_STD_VER >= 26
 };
 
 template <class _Range, class _Fn>

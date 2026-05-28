@@ -39,6 +39,7 @@
 #include <__ranges/empty_view.h>
 #include <__ranges/movable_box.h>
 #include <__ranges/range_adaptor.h>
+#include <__ranges/reserve_hint.h>
 #include <__ranges/size.h>
 #include <__ranges/view_interface.h>
 #include <__ranges/zip_transform_view.h>
@@ -149,6 +150,22 @@ public:
   {
     return __inner_.size();
   }
+
+#  if _LIBCPP_STD_VER >= 26
+
+  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto reserve_hint()
+    requires approximately_sized_range<_InnerView>
+  {
+    return __inner_.reserve_hint();
+  }
+
+  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto reserve_hint() const
+    requires approximately_sized_range<const _InnerView>
+  {
+    return __inner_.reserve_hint();
+  }
+
+#  endif //_LIBCPP_STD_VER >= 26
 };
 
 template <forward_range _View, move_constructible _Fn, size_t _Np>
