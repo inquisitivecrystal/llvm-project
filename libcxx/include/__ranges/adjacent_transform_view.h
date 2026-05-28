@@ -39,7 +39,6 @@
 #include <__ranges/empty_view.h>
 #include <__ranges/movable_box.h>
 #include <__ranges/range_adaptor.h>
-#include <__ranges/reserve_hint.h>
 #include <__ranges/size.h>
 #include <__ranges/view_interface.h>
 #include <__ranges/zip_transform_view.h>
