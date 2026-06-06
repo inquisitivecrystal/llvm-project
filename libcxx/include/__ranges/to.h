@@ -107,8 +107,8 @@ template <class _Container, input_range _Range, class... _Args>
     else if constexpr (constructible_from<_Container, _Args...> &&
                        __container_appendable<_Container, range_reference_t<_Range>>) {
       _Container __result(std::forward<_Args>(__args)...);
-      if constexpr (sized_range<_Range> && __reservable_container<_Container>) {
-        __result.reserve(static_cast<range_size_t<_Container>>(ranges::size(__range)));
+      if constexpr (__has_size_hint<_Range> && __reservable_container<_Container>) {
+        __result.reserve(static_cast<range_size_t<_Container>>(ranges::__size_hint(__range)));
       }
 
       for (auto&& __ref : __range) {

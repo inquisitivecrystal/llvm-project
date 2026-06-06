@@ -46,6 +46,7 @@
 #include <__ranges/concepts.h>
 #include <__ranges/container_compatible_range.h>
 #include <__ranges/from_range.h>
+#include <__ranges/size.h>
 #include <__split_buffer>
 #include <__type_traits/conditional.h>
 #include <__type_traits/enable_if.h>
@@ -227,10 +228,19 @@ public:
   _LIBCPP_HIDE_FROM_ABI constexpr vector(
       from_range_t, _Range&& __range, const allocator_type& __alloc = allocator_type())
       : __alloc_(__alloc) {
-    if constexpr (ranges::forward_range<_Range> || ranges::sized_range<_Range>) {
+    if constexpr (ranges::sized_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::size(__range));
+      __init_with_size(ranges::begin(__range), ranges::end(__range), __n);
+    }
+#  if _LIBCPP_STD_VER >= 26
+    else if constexpr (ranges::approximately_sized_range<_Range>) {
+      auto __reserve_hint = static_cast<size_type>(ranges::reserve_hint(__range));
+      __init_with_reserve_hint(ranges::begin(__range), ranges::end(__range), __reserve_hint);
+    }
+#  endif
+    else if constexpr (ranges::forward_range<_Range>) {
       auto __n = static_cast<size_type>(ranges::distance(__range));
       __init_with_size(ranges::begin(__range), ranges::end(__range), __n);
-
     } else {
       __init_with_sentinel(ranges::begin(__range), ranges::end(__range));
     }
@@ -319,10 +329,20 @@ public:
 #if _LIBCPP_STD_VER >= 23
   template <_ContainerCompatibleRange<_Tp> _Range>
   _LIBCPP_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range) {
-    if constexpr (ranges::forward_range<_Range> || ranges::sized_range<_Range>) {
-      auto __n = static_cast<size_type>(ranges::distance(__range));
+    if constexpr (ranges::sized_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::size(__range));
       __assign_with_size<_RangeAlgPolicy>(ranges::begin(__range), ranges::end(__range), __n);
 
+    }
+#  if _LIBCPP_STD_VER >= 26
+    else if constexpr (ranges::approximately_sized_range<_Range>) {
+      auto __reserve_hint = static_cast<size_type>(ranges::reserve_hint(__range));
+      __assign_with_reserve_hint(ranges::begin(__range), ranges::end(__range), __reserve_hint);
+    }
+#  endif
+    else if constexpr (ranges::forward_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::distance(__range));
+      __assign_with_size<_RangeAlgPolicy>(ranges::begin(__range), ranges::end(__range), __n);
     } else {
       __assign_with_sentinel(ranges::begin(__range), ranges::end(__range));
     }
@@ -479,22 +499,55 @@ public:
   }
 
 #if _LIBCPP_STD_VER >= 23
+  template <class _Iterator, class _Sentinel>
+  _LIBCPP_HIDE_FROM_ABI constexpr void __append_with_size(_Iterator&& __begin, _Sentinel&& __end, size_type __n) {
+    auto __spare_cap = static_cast<size_type>(__cap_ - __end_);
+    if (__n <= __spare_cap) {
+      __construct_at_end(std::forward<_Iterator>(__begin), std::forward<_Sentinel>(__end), __n);
+    } else {
+      _SplitBuffer __buffer(__recommend(size() + __n), size(), __alloc_);
+      __buffer.__construct_at_end_with_size(std::forward<_Iterator>(__begin), __n);
+      __swap_out_circular_buffer(__buffer);
+    }
+  }
+
+  template <_ContainerCompatibleRange<_Tp> _Range>
+  _LIBCPP_HIDE_FROM_ABI constexpr void __append_any_range(_Range&& __range) {
+    vector __buffer(__alloc_);
+    for (auto&& __val : __range)
+      __buffer.emplace_back(std::forward<decltype(__val)>(__val));
+    append_range(ranges::as_rvalue_view(__buffer));
+  }
+
+#  if _LIBCPP_STD_VER >= 26
+  template <_ContainerCompatibleRange<_Tp> _Range>
+  _LIBCPP_HIDE_FROM_ABI constexpr void __append_with_reserve_hint(_Range&& __range, size_type __hint) {
+    auto __spare_cap = static_cast<size_type>(__cap_ - __end_);
+    if (__hint > __spare_cap) {
+      reserve(size() + __hint);
+    }
+    for (auto&& __val : __range)
+      emplace_back(std::forward<decltype(__val)>(__val));
+  }
+#  endif
+
   template <_ContainerCompatibleRange<_Tp> _Range>
   _LIBCPP_HIDE_FROM_ABI constexpr void append_range(_Range&& __range) {
-    if constexpr (ranges::forward_range<_Range> || ranges::sized_range<_Range>) {
-      auto __len = ranges::distance(__range);
-      if (__len <= __cap_ - __end_) {
-        __construct_at_end(ranges::begin(__range), ranges::end(__range), __len);
-      } else {
-        _SplitBuffer __buffer(__recommend(size() + __len), size(), __alloc_);
-        __buffer.__construct_at_end_with_size(ranges::begin(__range), __len);
-        __swap_out_circular_buffer(__buffer);
-      }
+    if constexpr (ranges::sized_range<_Range>) {
+      auto __len = static_cast<size_type>(ranges::size(__range));
+      __append_with_size(ranges::begin(__range), ranges::end(__range), __len);
+    }
+#  if _LIBCPP_STD_VER >= 26
+    else if constexpr (ranges::approximately_sized_range<_Range>) {
+      auto __reserve_hint = static_cast<size_type>(ranges::reserve_hint(__range));
+      __append_with_reserve_hint(__range, __reserve_hint);
+    }
+#  endif
+    else if constexpr (ranges::forward_range<_Range>) {
+      auto __len = static_cast<size_type>(ranges::distance(__range));
+      __append_with_size(ranges::begin(__range), ranges::end(__range), __len);
     } else {
-      vector __buffer(__alloc_);
-      for (auto&& __val : __range)
-        __buffer.emplace_back(std::forward<decltype(__val)>(__val));
-      append_range(ranges::as_rvalue_view(__buffer));
+      __append_any_range(__range);
     }
   }
 #endif
@@ -535,10 +588,20 @@ public:
 #if _LIBCPP_STD_VER >= 23
   template <_ContainerCompatibleRange<_Tp> _Range>
   _LIBCPP_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __position, _Range&& __range) {
-    if constexpr (ranges::forward_range<_Range> || ranges::sized_range<_Range>) {
-      auto __n = static_cast<size_type>(ranges::distance(__range));
+    if constexpr (ranges::sized_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::size(__range));
       return __insert_with_size<_RangeAlgPolicy>(__position, ranges::begin(__range), ranges::end(__range), __n);
 
+    }
+#  if _LIBCPP_STD_VER >= 26
+    else if constexpr (ranges::approximately_sized_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::reserve_hint(__range));
+      return __insert_with_reserve_hint(__position, ranges::begin(__range), ranges::end(__range), __n);
+    }
+#  endif
+    else if constexpr (ranges::forward_range<_Range>) {
+      auto __n = static_cast<size_type>(ranges::distance(__range));
+      return __insert_with_size<_RangeAlgPolicy>(__position, ranges::begin(__range), ranges::end(__range), __n);
     } else {
       return __insert_with_sentinel(__position, ranges::begin(__range), ranges::end(__range));
     }
@@ -624,8 +687,31 @@ private:
     __guard.__complete();
   }
 
+#if _LIBCPP_STD_VER >= 26
+  template <class _InputIterator, class _Sentinel>
+  _LIBCPP_HIDE_FROM_ABI constexpr void
+  __init_with_reserve_hint(_InputIterator __first, _Sentinel __last, size_type __hint) {
+    auto __guard = std::__make_exception_guard(__destroy_vector(*this));
+
+    if (__hint > 0) {
+      __vallocate(__hint);
+    }
+
+    for (; __first != __last; ++__first)
+      emplace_back(*__first);
+
+    __guard.__complete();
+  }
+#endif
+
   template <class _Iterator, class _Sentinel>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void __assign_with_sentinel(_Iterator __first, _Sentinel __last);
+
+#if _LIBCPP_STD_VER >= 26
+  template <class _Iterator, class _Sentinel>
+  _LIBCPP_HIDE_FROM_ABI constexpr void
+  __assign_with_reserve_hint(_Iterator __first, _Sentinel __last, size_type __hint);
+#endif
 
   // The `_Iterator` in `*_with_size` functions can be input-only only if called from `*_range` (since C++23).
   // Otherwise, `_Iterator` is a forward iterator.
@@ -660,6 +746,12 @@ private:
   template <class _AlgPolicy, class _Iterator, class _Sentinel>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI iterator
   __insert_with_size(const_iterator __position, _Iterator __first, _Sentinel __last, difference_type __n);
+
+#if _LIBCPP_STD_VER >= 26
+  template <class _Iterator, class _Sentinel>
+  _LIBCPP_HIDE_FROM_ABI constexpr iterator
+  __insert_with_reserve_hint(const_iterator __position, _Iterator __first, _Sentinel __last, size_type __hint);
+#endif
 
   template <class _InputIterator, class _Sentinel>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void
@@ -1022,6 +1114,19 @@ vector<_Tp, _Allocator>::__assign_with_sentinel(_Iterator __first, _Sentinel __l
   }
 }
 
+#if _LIBCPP_STD_VER >= 26
+template <class _Tp, class _Allocator>
+template <class _Iterator, class _Sentinel>
+_LIBCPP_HIDE_FROM_ABI constexpr void
+vector<_Tp, _Allocator>::__assign_with_reserve_hint(_Iterator __first, _Sentinel __last, size_type __hint) {
+  if (__hint > capacity()) {
+    __vdeallocate();
+    __vallocate(__recommend(__hint));
+  }
+  __assign_with_sentinel(__first, __last);
+}
+#endif
+
 template <class _Tp, class _Allocator>
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
 _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void
@@ -1341,6 +1446,18 @@ vector<_Tp, _Allocator>::__insert_with_size(
   }
   return __make_iter(__p);
 }
+
+#if _LIBCPP_STD_VER >= 26
+template <class _Tp, class _Allocator>
+template <class _Iterator, class _Sentinel>
+_LIBCPP_HIDE_FROM_ABI constexpr
+    typename vector<_Tp, _Allocator>::iterator vector<_Tp, _Allocator>::__insert_with_reserve_hint(
+        const_iterator __position, _Iterator __first, _Sentinel __last, size_type __hint) {
+  difference_type __off = __position - begin();
+  reserve(size() + __hint);
+  return __insert_with_sentinel(begin() + __off, __first, __last);
+}
+#endif
 
 template <class _Tp, class _Allocator>
 _LIBCPP_CONSTEXPR_SINCE_CXX20 void vector<_Tp, _Allocator>::resize(size_type __new_size) {

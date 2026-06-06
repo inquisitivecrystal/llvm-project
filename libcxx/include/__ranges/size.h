@@ -179,10 +179,22 @@ struct __fn {
 
 inline namespace __cpo {
 inline constexpr auto reserve_hint = __reserve_hint::__fn{};
+
+// __size_hint is the best available size hint for the current C++ version;
+// it is ranges::reserve_hint on C++26+ and ranges::size on C++20-23
+inline constexpr auto __size_hint = reserve_hint;
 } // namespace __cpo
 } // namespace ranges
 
-#endif // _LIBCPP_STD_VER >= 26
+#  else // _LIBCPP_STD_VER < 26
+
+inline namespace __cpo {
+// __size_hint is the best available size hint for the current C++ version;
+// it is ranges::reserve_hint on C++26+ and ranges::size on C++20-23
+inline constexpr auto __size_hint = ranges::size;
+} // namespace __cpo
+
+#  endif // _LIBCPP_STD_VER < 26
 
 #endif // _LIBCPP_STD_VER >= 20
 

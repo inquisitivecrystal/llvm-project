@@ -185,6 +185,18 @@ concept __concatable = requires {
   typename __concat_rvalue_reference_t<_Rs...>;
 } && __concat_indirectly_readable<_Rs...>;
 
+#    if _LIBCPP_STD_VER >= 26
+
+template <class _Tp>
+concept __has_size_hint = approximately_sized_range<_Tp>;
+
+#    else // _LIBCPP_STD_VER < 26
+
+template <class _Tp>
+concept __has_size_hint = sized_range<_Tp>;
+
+#    endif
+
 #  endif // _LIBCPP_STD_VER >= 23
 
 } // namespace ranges

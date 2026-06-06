@@ -442,8 +442,8 @@ public:
 
   template <_ContainerCompatibleRange<value_type> _Range>
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX26 void insert_range(_Range&& __range) {
-    if constexpr (ranges::sized_range<_Range>) {
-      __reserve(ranges::size(__range));
+    if constexpr (ranges::__has_size_hint<_Range>) {
+      __reserve(ranges::__size_hint(__range));
     }
 
     __append_sort_merge</*WasSorted = */ false>(std::forward<_Range>(__range));
@@ -451,8 +451,8 @@ public:
 
   template <_ContainerCompatibleRange<value_type> _Range>
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX26 void insert_range(sorted_equivalent_t, _Range&& __range) {
-    if constexpr (ranges::sized_range<_Range>) {
-      __reserve(ranges::size(__range));
+    if constexpr (ranges::__has_size_hint<_Range>) {
+      __reserve(ranges::__size_hint(__range));
     }
 
     __append_sort_merge</*WasSorted = */ true>(std::forward<_Range>(__range));
