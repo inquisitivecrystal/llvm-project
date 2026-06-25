@@ -73,6 +73,60 @@ constexpr bool test() {
     }
   }
 
+#if TEST_STD_VER >= 26
+  { // test assigning an approximately sized range
+    int in3[]{1, 2, 3};
+    int in8[]{1, 2, 3, 4, 5, 6, 7, 8};
+    int in12[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+    std::vector<int> v1 = {0, 1, 2, 3, 4, 5, 6, 7};
+    v1.shrink_to_fit();
+    std::vector<int> v2 = v1;
+    std::vector<int> v3 = v1;
+    std::vector<int> v4 = v1;
+    std::vector<int> v5 = v1;
+    std::vector<int> v6 = v1;
+
+    ApproxSizedRange range1(in8, in8 + 8, /*hint=*/8);
+    assert(v1.capacity() == 8);
+    v1.assign_range(range1);
+    assert(v1.capacity() == 8);
+    assert(std::ranges::equal(v1, in8));
+
+    ApproxSizedRange range2(in12, in12 + 12, /*hint=*/2);
+    assert(v2.capacity() == 8);
+    v2.assign_range(range2);
+    assert(v2.capacity() >= 12);
+    assert(std::ranges::equal(v2, in12));
+
+    ApproxSizedRange range3(in8, in8 + 8, /*hint=*/100);
+    v3.reserve(16);
+    assert(v3.capacity() >= 16);
+    assert(v3.capacity() < 100);
+    v3.assign_range(range3);
+    assert(v3.capacity() >= 100);
+    assert(std::ranges::equal(v3, in8));
+
+    ApproxSizedRange range4(in8, in8 + 8, /*hint=*/0);
+    assert(v4.capacity() == 8);
+    v4.assign_range(range4);
+    assert(v4.capacity() == 8);
+    assert(std::ranges::equal(v4, in8));
+
+    ApproxSizedRange range5(in8, in8, /*hint=*/0);
+    assert(v5.capacity() == 8);
+    v5.assign_range(range5);
+    assert(v5.capacity() == 8);
+    assert(v5.empty());
+
+    ApproxSizedRange range6(in3, in3 + 3, /*hint=*/3);
+    assert(v6.capacity() == 8);
+    v6.assign_range(range6);
+    assert(v6.capacity() == 8);
+    assert(std::ranges::equal(v6, in3));
+  }
+#endif
+
   return true;
 }
 

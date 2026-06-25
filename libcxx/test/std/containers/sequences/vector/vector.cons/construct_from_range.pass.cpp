@@ -34,6 +34,32 @@ constexpr bool test() {
     assert(std::ranges::equal(v, std::vector<int>{1, 2, 3, 4}));
   }
 
+#if TEST_STD_VER >= 26
+  { // test that approximately sized ranges work, even if the reserve_hint is inaccurate
+    int in[]{1, 2, 3, 4, 5, 6, 7, 8};
+
+    ApproxSizedRange range1(in, in + 8, /*hint=*/8);
+    ApproxSizedRange range2(in, in + 8, /*hint=*/2);
+    ApproxSizedRange range3(in, in + 8, /*hint=*/20);
+    ApproxSizedRange range4(in, in + 8, /*hint=*/0);
+    ApproxSizedRange range5(in, in, /*hint=*/0);
+
+    std::vector v1(std::from_range, range1);
+    std::vector v2(std::from_range, range2);
+    std::vector v3(std::from_range, range3);
+    std::vector v4(std::from_range, range4);
+    std::vector<int> correct{1, 2, 3, 4, 5, 6, 7, 8};
+
+    assert(std::ranges::equal(v1, correct));
+    assert(std::ranges::equal(v2, correct));
+    assert(std::ranges::equal(v3, correct));
+    assert(std::ranges::equal(v4, correct));
+
+    std::vector v5(std::from_range, range5);
+    assert(std::ranges::equal(v5, std::vector<int>{}));
+  }
+#endif
+
   return true;
 }
 

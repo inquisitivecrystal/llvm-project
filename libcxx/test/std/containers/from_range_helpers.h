@@ -29,6 +29,24 @@ struct InputRange {
   sentinel_wrapper<cpp20_input_iterator<T*>> end();
 };
 
+#if TEST_STD_VER >= 26
+template <class T>
+struct ApproxSizedRange {
+  T* start_;
+  T* end_;
+  std::size_t hint_;
+
+  constexpr explicit ApproxSizedRange(T* start, T* end, std::size_t hint) : start_(start), end_(end), hint_(hint) {}
+  constexpr auto begin() const { return forward_iterator<T*>(start_); }
+  constexpr auto end() const { return sentinel_wrapper(forward_iterator<T*>(end_)); }
+  constexpr std::size_t reserve_hint() const { return hint_; }
+};
+
+// deduction guide
+template <typename T>
+ApproxSizedRange(T*, T*, std::size_t) -> ApproxSizedRange<T>;
+#endif
+
 template <class Iter, class Sent, std::ranges::input_range Range>
 constexpr auto wrap_input(Range&& input) {
   auto b = Iter(std::ranges::begin(input));

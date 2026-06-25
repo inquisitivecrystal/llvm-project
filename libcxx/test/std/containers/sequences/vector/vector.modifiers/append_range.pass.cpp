@@ -68,6 +68,46 @@ constexpr bool test() {
     }
   }
 
+#if TEST_STD_VER >= 26
+  { // test appending an approximately sized range
+    int in[]{1, 2, 3, 4, 5, 6, 7, 8};
+
+    std::vector<int> v1 = {1, 2, 3, 4, 5, 6, 7, 8};
+    v1.shrink_to_fit();
+    std::vector<int> v2 = v1;
+    std::vector<int> v3 = v1;
+    std::vector<int> v4 = v1;
+    std::vector<int> v5 = v1;
+
+    ApproxSizedRange range1(in, in + 8, /*hint=*/8);
+    assert(v1.capacity() == 8);
+    v1.append_range(range1);
+    assert(v1.capacity() >= 16);
+
+    ApproxSizedRange range2(in, in + 8, /*hint=*/2);
+    assert(v2.capacity() == 8);
+    v2.append_range(range2);
+    assert(v2.capacity() >= 16);
+
+    ApproxSizedRange range3(in, in + 8, /*hint=*/100);
+    v3.reserve(16);
+    assert(v3.capacity() >= 16);
+    assert(v3.capacity() < 100);
+    v3.append_range(range3);
+    assert(v3.capacity() >= 108);
+
+    ApproxSizedRange range4(in, in + 8, /*hint=*/0);
+    assert(v4.capacity() == 8);
+    v4.append_range(range4);
+    assert(v4.capacity() >= 16);
+
+    ApproxSizedRange range5(in, in, /*hint=*/0);
+    assert(v5.capacity() == 8);
+    v5.append_range(range5);
+    assert(v5.capacity() == 8);
+  }
+#endif
+
   return true;
 }
 

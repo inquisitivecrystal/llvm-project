@@ -58,6 +58,58 @@ constexpr bool test() {
     }
   }
 
+#if TEST_STD_VER >= 26
+  { // test appending an approximately sized range
+    constexpr int N = 255;
+    bool in[N]      = {};
+    for (int i = 0; i < N; ++i)
+      in[i] = i % 3 == 0;
+
+    // range3 is the case that actually checks that the reserve_hint is used; other
+    // tests just check capacity and correct copying
+    std::vector<bool> v1(std::begin(in), std::end(in));
+    v1.shrink_to_fit();
+    std::vector<bool> v2 = v1;
+    std::vector<bool> v3 = v1;
+    std::vector<bool> v4 = v1;
+    std::vector<bool> v5 = v1;
+
+    ApproxSizedRange range1(in, in + 8, /*hint=*/8);
+    assert(v1.capacity() == 256);
+    v1.append_range(range1);
+    assert(v1.capacity() >= 263);
+    assert(std::ranges::equal(v1.begin(), v1.begin() + N, std::begin(in), std::end(in)));
+    assert(std::ranges::equal(v1.begin() + N, v1.end(), range1.begin(), range1.end()));
+
+    ApproxSizedRange range2(in, in + 8, /*hint=*/2);
+    assert(v2.capacity() == 256);
+    v2.append_range(range2);
+    assert(v2.capacity() >= 263);
+    assert(std::ranges::equal(v2.begin(), v2.begin() + N, std::begin(in), std::end(in)));
+    assert(std::ranges::equal(v2.begin() + N, v2.end(), range2.begin(), range2.end()));
+
+    ApproxSizedRange range3(in, in + 8, /*hint=*/500);
+    assert(v3.capacity() == 256);
+    v3.append_range(range3);
+    assert(v3.capacity() >= N + 500);
+    assert(std::ranges::equal(v3.begin(), v3.begin() + N, std::begin(in), std::end(in)));
+    assert(std::ranges::equal(v3.begin() + N, v3.end(), range3.begin(), range3.end()));
+
+    ApproxSizedRange range4(in, in + 8, /*hint=*/0);
+    assert(v4.capacity() == 256);
+    v4.append_range(range4);
+    assert(v4.capacity() >= 263);
+    assert(std::ranges::equal(v4.begin(), v4.begin() + N, std::begin(in), std::end(in)));
+    assert(std::ranges::equal(v4.begin() + N, v4.end(), range4.begin(), range4.end()));
+
+    ApproxSizedRange range5(in, in, /*hint=*/0);
+    assert(v5.capacity() == 256);
+    v5.append_range(range5);
+    assert(v5.capacity() == 256);
+    assert(std::ranges::equal(v5.begin(), v5.end(), std::begin(in), std::end(in)));
+  }
+#endif
+
   return true;
 }
 
