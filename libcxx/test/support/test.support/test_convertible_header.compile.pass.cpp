@@ -63,9 +63,3 @@ struct ExplicitArgs {
   explicit ExplicitArgs(int, int, int) {}
 };
 static_assert(!test_convertible<ExplicitArgs, int, int, int>(), "Must not be convertible");
-
-int main(int, char**) {
-    // Nothing to do
-
-  return 0;
-}

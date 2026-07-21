@@ -6,16 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cstddef>
+// <vector>
+// class vector
+// vector();
+
+#include <vector>
 
 #include "test_macros.h"
 
-#ifndef NULL
-#error NULL not defined
-#endif
+struct X {
+  std::vector<X> q;
+};
 
-int main(int, char**)
-{
-
-  return 0;
-}

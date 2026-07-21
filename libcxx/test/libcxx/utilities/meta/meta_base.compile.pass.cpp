@@ -74,7 +74,3 @@ template <class T, class U>
 using FuncCallable = decltype(std::declval<T>().func(std::declval<U>()));
 template <class T>
 using BadCheck = typename T::DOES_NOT_EXIST;
-
-int main(int, char**) {
-  return 0;
-}

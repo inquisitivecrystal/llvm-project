@@ -29,9 +29,3 @@
 #ifdef false
 #error false should not be defined
 #endif
-
-int main(int, char**)
-{
-
-  return 0;
-}

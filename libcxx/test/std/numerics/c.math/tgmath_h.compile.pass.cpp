@@ -6,16 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <initializer_list>
+// <tgmath.h>
 
-// Test that the file can be included in C++03
+// this test verifies that tgmath.h compiles without errors
 
-#include <initializer_list>
+#include <tgmath.h>
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
 
-  return 0;
-}

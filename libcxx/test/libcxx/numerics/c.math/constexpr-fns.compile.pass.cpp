@@ -21,9 +21,3 @@
 #include "test_macros.h"
 
 static_assert(std::__constexpr_isinf(0.0) == false, "");
-
-int main(int, char**)
-{
-
-  return 0;
-}

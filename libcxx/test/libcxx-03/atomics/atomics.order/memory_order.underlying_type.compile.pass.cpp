@@ -28,7 +28,3 @@ static_assert((std::is_same<std::underlying_type<cpp17_memory_order>::type,
                             std::underlying_type<std::memory_order>::type>::value),
   "std::memory_order should have the same underlying type as a corresponding "
   "unscoped enumeration would. Otherwise, our ABI changes from C++17 to C++20.");
-
-int main(int, char**) {
-  return 0;
-}

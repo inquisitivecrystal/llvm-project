@@ -6,17 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Tests workaround for  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64816.
+// <forward_list>
 
-#include <string>
+// class forward_list
+
+// forward_list();
+
+#include <forward_list>
+
 #include "test_macros.h"
 
-void f(const std::string &s) { TEST_IGNORE_NODISCARD s.begin(); }
-
-#include <vector>
-
-void AppendTo(const std::vector<char> &v) { TEST_IGNORE_NODISCARD v.begin(); }
-
-int main(int, char**) {
-  return 0;
-}
+struct X {
+  std::forward_list<X> q;
+};
